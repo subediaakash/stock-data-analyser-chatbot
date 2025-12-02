@@ -11,16 +11,18 @@
     "import:invoice": "tsx scripts/import-invoice.ts"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^2.0.76",
+    "@ai-sdk/react": "^2.0.106",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-checkbox": "^1.3.3",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-slot": "^1.2.4",
+    "ai": "^5.0.106",
     "better-auth": "^1.4.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.44.7",
-    "xlsx": "^0.18.5",
     "lucide-react": "^0.555.0",
     "next": "16.0.5",
     "pg": "^8.16.3",
@@ -28,6 +30,7 @@
     "react-dom": "19.2.0",
     "react-hook-form": "^7.67.0",
     "tailwind-merge": "^3.4.0",
+    "xlsx": "^0.18.5",
     "zod": "^4.1.13"
   },
   "devDependencies": {
