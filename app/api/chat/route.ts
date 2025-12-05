@@ -3,6 +3,21 @@ import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 
 import {
+    getAgentGrowth,
+    getCityAnalysis,
+    getCustomerGrowth,
+    getEndUseShare,
+    getInactiveCustomers,
+    getQuarterlyRevenue,
+    getRegionGrowth,
+    getStockInfo,
+    getStockSalesAnalysis,
+    getStockTurnRatio,
+    getTopProducts,
+    getTotalStockValue,
+} from "@/lib/salesAnalysisTools";
+
+import {
     getAgentPerformance,
     getCustomerAmountSummary,
     getFabricPerformanceByEndUse,
@@ -342,6 +357,138 @@ export async function POST(req: Request) {
                 inputSchema: z.object({}),
                 async execute() {
                     return listAdminDistinctValues();
+                },
+            },
+            getQuarterlyRevenue: {
+                description:
+                    "Get quarterly revenue for regions (e.g. US, UK, EU) for the last N years.",
+                inputSchema: z.object({
+                    regions: z.array(z.string()).optional().describe(
+                        "List of regions to filter by.",
+                    ),
+                    years: z.number().optional().describe(
+                        "Number of years to look back (default 2).",
+                    ),
+                }),
+                async execute(input) {
+                    return getQuarterlyRevenue(input);
+                },
+            },
+            getRegionGrowth: {
+                description: "Get region growth percentage (year over year).",
+                inputSchema: z.object({}),
+                async execute() {
+                    return getRegionGrowth();
+                },
+            },
+            getCustomerGrowth: {
+                description:
+                    "Get customer growth percentage and absolute growth (year over year).",
+                inputSchema: z.object({
+                    limit: z.number().optional().describe(
+                        "Limit number of customers returned.",
+                    ),
+                }),
+                async execute(input) {
+                    return getCustomerGrowth(input);
+                },
+            },
+            getCityAnalysis: {
+                description:
+                    "Analyze city performance: top customers, top products, top shades, or average selling rate.",
+                inputSchema: z.object({
+                    city: z.string().describe("City name to analyze."),
+                    type: z.enum([
+                        "top_customers",
+                        "top_products",
+                        "avg_selling_rate",
+                        "top_shades",
+                    ]).describe("Type of analysis."),
+                }),
+                async execute(input) {
+                    return getCityAnalysis(input);
+                },
+            },
+            getEndUseShare: {
+                description:
+                    "Get revenue share by end use (e.g. Curtains, Upholstery).",
+                inputSchema: z.object({}),
+                async execute() {
+                    return getEndUseShare();
+                },
+            },
+            getAgentGrowth: {
+                description: "Get agent growth in revenue (year over year).",
+                inputSchema: z.object({}),
+                async execute() {
+                    return getAgentGrowth();
+                },
+            },
+            getInactiveCustomers: {
+                description:
+                    "Get customers who were active but haven't ordered in the last N months.",
+                inputSchema: z.object({
+                    monthsInactive: z.number().describe(
+                        "Months of inactivity.",
+                    ),
+                }),
+                async execute(input) {
+                    return getInactiveCustomers(input);
+                },
+            },
+            getStockSalesAnalysis: {
+                description:
+                    "Analyze stock vs sales: find high sales with zero stock, out of stock items, likely to stock out, or low stock.",
+                inputSchema: z.object({
+                    type: z.enum([
+                        "high_sales_zero_stock",
+                        "out_of_stock",
+                        "likely_stock_out",
+                        "low_stock",
+                        "excess_stock",
+                    ]).describe("Type of analysis."),
+                }),
+                async execute(input) {
+                    return getStockSalesAnalysis(input);
+                },
+            },
+            getStockInfo: {
+                description:
+                    "Check stock availability for a SKU or list stock items.",
+                inputSchema: z.object({
+                    sku: z.string().optional().describe("SKU / Material code."),
+                    minQuantity: z.number().optional().describe(
+                        "Minimum stock quantity to filter.",
+                    ),
+                }),
+                async execute(input) {
+                    return getStockInfo(input);
+                },
+            },
+            getTotalStockValue: {
+                description: "Get total value of current stock.",
+                inputSchema: z.object({}),
+                async execute() {
+                    return getTotalStockValue();
+                },
+            },
+            getStockTurnRatio: {
+                description:
+                    "Calculate stock turn ratio (Total Sales / Current Stock).",
+                inputSchema: z.object({}),
+                async execute() {
+                    return getStockTurnRatio();
+                },
+            },
+            getTopProducts: {
+                description: "Get top selling products by revenue.",
+                inputSchema: z.object({
+                    limit: z.number().optional().describe(
+                        "Limit results (default 10).",
+                    ),
+                }),
+                async execute(input) {
+                    return getTopProducts(input);
                 },
             },
         },
