@@ -56,6 +56,21 @@ function toNumeric(value: number | string | null | undefined) {
     return Number.isNaN(n) ? null : n;
 }
 
+function toDecimal(value: number | string | null | undefined) {
+    if (value === null || value === undefined || value === "") return null;
+    const n = typeof value === "number" ? value : Number(value);
+    return Number.isNaN(n) ? null : n.toString();
+}
+
+function toDateString(value: string | Date | number | null | undefined) {
+    if (!value) return null;
+    const date = typeof value === "object" && value instanceof Date
+        ? value
+        : new Date(value as string | number);
+    if (Number.isNaN(date.getTime())) return null;
+    return date.toISOString().split("T")[0];
+}
+
 function toString(value: unknown) {
     if (value === null || value === undefined) return null;
     const s = String(value).trim();
@@ -111,12 +126,10 @@ async function main() {
 
                 return {
                     material,
-                    stockInMeters: toNumeric(row.stock_in_meters),
-                    replenishmentDate: row.replenishment_date
-                        ? new Date(row.replenishment_date as string)
-                        : null,
+                    stockInMeters: toDecimal(row.stock_in_meters),
+                    replenishmentDate: toDateString(row.replenishment_date),
                     leadTimeDays: toNumeric(row.lead_time_days),
-                    basicPrice: toNumeric(row.basic_price),
+                    basicPrice: toDecimal(row.basic_price),
                     description2ForTheMaterialGroup: toString(
                         row.description_2_for_the_material_group,
                     ),
@@ -124,7 +137,7 @@ async function main() {
                     stockType: toString(row.stock_type),
                     loomType: toString(row.loom_type),
                     dyedType: toString(row.dyed_type),
-                    width: toNumeric(row.width),
+                    width: toDecimal(row.width),
 
                     quality: toString(row.quality),
                     design: toString(row.design),
@@ -154,9 +167,9 @@ async function main() {
                         toString(row.fabric_typ_des),
                     style: toString(row.style),
 
-                    gsm: toNumeric(row.gsm),
-                    verticalRepeat: toNumeric(row.vertical_repeat),
-                    horizontalRepeat: toNumeric(row.horizontal_repeat),
+                    gsm: toDecimal(row.gsm),
+                    verticalRepeat: toDecimal(row.vertical_repeat),
+                    horizontalRepeat: toDecimal(row.horizontal_repeat),
                     repeat: toString(row.repeat),
 
                     composition: toString(row.composition),

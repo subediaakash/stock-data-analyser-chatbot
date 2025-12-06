@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1764506754157,
-      "tag": "0000_secret_avengers",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1764606234104,
-      "tag": "0001_zippy_stardust",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1764607449984,
-      "tag": "0002_equal_sugar_man",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1764608113273,
-      "tag": "0003_brown_hardball",
+      "when": 1765041030944,
+      "tag": "0000_nasty_colossus",
       "breakpoints": true
     }
   ]

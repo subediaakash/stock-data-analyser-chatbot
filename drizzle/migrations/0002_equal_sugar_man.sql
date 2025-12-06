@@ -1,1 +1,0 @@
-ALTER TABLE "stock" ALTER COLUMN "gsm" SET DATA TYPE numeric;
