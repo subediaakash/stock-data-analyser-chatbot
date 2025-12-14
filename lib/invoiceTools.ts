@@ -3,6 +3,10 @@ import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { db } from "@/drizzle/db";
 import { invoice } from "@/drizzle/schema/invoice-schema";
 
+// S3 bucket base URL for invoice PDFs
+const INVOICE_PDF_BUCKET_URL =
+    "https://ainoc-chatbot-files-bucket.s3.us-east-2.amazonaws.com";
+
 type DateInput = string | Date;
 
 // `invoiceDate` is stored as a DATE column which Drizzle maps to `string`.
@@ -568,5 +572,61 @@ export async function listAdminDistinctValues() {
         agents,
         endUses,
         ainocularDesigns,
+    };
+}
+
+// =========
+// Invoice PDF Tool
+// =========
+
+/**
+ * Get the PDF download link for an invoice by billing document ID.
+ * The PDF files are stored in an S3 bucket with the naming convention: {billingDocument}.pdf
+ */
+export async function getInvoicePdfLink(params: {
+    billingDocument: string;
+}) {
+    const { billingDocument } = params;
+
+    if (!billingDocument || billingDocument.trim() === "") {
+        return {
+            success: false,
+            error: "Billing document ID is required.",
+            pdfUrl: null,
+        };
+    }
+
+    // Verify the invoice exists in the database
+    const [invoiceRecord] = await db
+        .select({
+            billingDocument: invoice.billingDocument,
+            billToParty: invoice.billToParty,
+            invoiceDate: invoice.invoiceDate,
+            netAmountInr: invoice.netAmountInr,
+        })
+        .from(invoice)
+        .where(eq(invoice.billingDocument, billingDocument.trim()))
+        .limit(1);
+
+    if (!invoiceRecord) {
+        return {
+            success: false,
+            error:
+                `No invoice found with billing document ID: ${billingDocument}`,
+            pdfUrl: null,
+        };
+    }
+
+    const pdfUrl = `${INVOICE_PDF_BUCKET_URL}/${billingDocument.trim()}.pdf`;
+
+    return {
+        success: true,
+        billingDocument: invoiceRecord.billingDocument,
+        billToParty: invoiceRecord.billToParty,
+        invoiceDate: invoiceRecord.invoiceDate,
+        netAmountInr: invoiceRecord.netAmountInr,
+        pdfUrl,
+        message:
+            `PDF available for invoice ${billingDocument}. Click the link to download.`,
     };
 }

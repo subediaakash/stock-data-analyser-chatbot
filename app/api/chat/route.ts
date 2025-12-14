@@ -33,6 +33,7 @@ import {
     getInvoiceByBillingDocumentAndItem,
     getInvoiceById,
     getInvoiceKpis,
+    getInvoicePdfLink,
     getPatternPerformance,
     getRevenueByRegion,
     getTopCustomersByRevenue,
@@ -367,6 +368,21 @@ export async function POST(req: Request) {
                 inputSchema: z.object({}),
                 async execute() {
                     return listAdminDistinctValues();
+                },
+            },
+            getInvoicePdfLink: {
+                description:
+                    "Get the PDF download link for an invoice by its billing document ID. Returns a public S3 URL to download the invoice PDF.",
+                inputSchema: z.object({
+                    billingDocument: z
+                        .string()
+                        .min(1)
+                        .describe(
+                            "The billing document ID/number of the invoice to get the PDF for.",
+                        ),
+                }),
+                async execute({ billingDocument }) {
+                    return getInvoicePdfLink({ billingDocument });
                 },
             },
             getQuarterlyRevenue: {
