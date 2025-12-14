@@ -7,14 +7,23 @@ import {
     getCityAnalysis,
     getCustomerGrowth,
     getEndUseShare,
+    getExcessStockReport,
     getInactiveCustomers,
     getQuarterlyRevenue,
     getRegionGrowth,
+    getReplenishmentReport,
+    getStockAgingReport,
+    getStockByCategory,
     getStockInfo,
+    getStockLeadTimeAnalysis,
     getStockSalesAnalysis,
+    getStockSummaryKpis,
     getStockTurnRatio,
+    getStockValueByDesign,
     getTopProducts,
     getTotalStockValue,
+    listStockDistinctValues,
+    searchStock,
 } from "@/lib/salesAnalysisTools";
 
 import {
@@ -39,9 +48,10 @@ export async function POST(req: Request) {
     const result = await streamText({
         model: openai("gpt-5-nano"),
         system:
-            "You are an invoice analytics assistant. Always answer the user in clear, short natural language, " +
-            "backed by factual data from the invoice tools. When you call tools, you must also follow up " +
-            "with a human-readable explanation of the results.",
+            "You are an invoice and stock analytics assistant. Always answer the user in clear, short natural language, " +
+            "backed by factual data from the available tools. You can analyze invoices, sales trends, customer behavior, " +
+            "and stock/inventory data including stock levels, replenishment needs, excess stock, and stock value by category. " +
+            "When you call tools, you must also follow up with a human-readable explanation of the results.",
         messages: convertToModelMessages(messages),
         // Allow multiple LLM steps so the model can call tools and then answer.
         stopWhen: stepCountIs(7),
@@ -489,6 +499,197 @@ export async function POST(req: Request) {
                 }),
                 async execute(input) {
                     return getTopProducts(input);
+                },
+            },
+
+            // ========================
+            // Admin Stock Tools
+            // ========================
+
+            getStockSummaryKpis: {
+                description:
+                    "Get high-level stock KPIs: total materials, total quantity, total value, average price, items with/without stock.",
+                inputSchema: z.object({}),
+                async execute() {
+                    return getStockSummaryKpis();
+                },
+            },
+            getStockByCategory: {
+                description:
+                    "Group stock by category (fabric type, loom type, dyed type, stock type, colour family, end use, or pattern name) with quantity and value totals.",
+                inputSchema: z.object({
+                    groupBy: z
+                        .enum([
+                            "fabric_type",
+                            "loom_type",
+                            "dyed_type",
+                            "stock_type",
+                            "colour_family",
+                            "end_use",
+                            "pattern_name",
+                        ])
+                        .describe("The attribute to group stock by."),
+                }),
+                async execute(input) {
+                    return getStockByCategory(input);
+                },
+            },
+            getReplenishmentReport: {
+                description:
+                    "Get items that need replenishment within the next N days based on replenishment date.",
+                inputSchema: z.object({
+                    daysAhead: z
+                        .number()
+                        .optional()
+                        .describe(
+                            "Number of days to look ahead for replenishment (default 30).",
+                        ),
+                }),
+                async execute(input) {
+                    return getReplenishmentReport(input);
+                },
+            },
+            getStockLeadTimeAnalysis: {
+                description:
+                    "Analyze stock items by lead time - find items with long or short lead times.",
+                inputSchema: z.object({
+                    minLeadTimeDays: z
+                        .number()
+                        .optional()
+                        .describe("Minimum lead time in days to filter."),
+                    sortOrder: z
+                        .enum(["asc", "desc"])
+                        .optional()
+                        .describe(
+                            "Sort order for lead time (default desc - longest first).",
+                        ),
+                    limit: z
+                        .number()
+                        .optional()
+                        .describe("Limit results (default 20)."),
+                }),
+                async execute(input) {
+                    return getStockLeadTimeAnalysis(input);
+                },
+            },
+            searchStock: {
+                description:
+                    "Advanced stock search with multiple filters: material, colour, pattern, fabric type, price range, stock range, etc.",
+                inputSchema: z.object({
+                    material: z
+                        .string()
+                        .optional()
+                        .describe("Material code or partial match."),
+                    colourFamily: z
+                        .string()
+                        .optional()
+                        .describe("Colour family to filter by."),
+                    patternName: z
+                        .string()
+                        .optional()
+                        .describe("Pattern name to filter by."),
+                    fabricType: z
+                        .string()
+                        .optional()
+                        .describe("Fabric type to filter by."),
+                    loomType: z
+                        .string()
+                        .optional()
+                        .describe("Loom type to filter by."),
+                    dyedType: z
+                        .string()
+                        .optional()
+                        .describe("Dyed type to filter by."),
+                    endUse: z
+                        .string()
+                        .optional()
+                        .describe("End use category to filter by."),
+                    design: z
+                        .string()
+                        .optional()
+                        .describe("Ainocular design to filter by."),
+                    minStock: z
+                        .number()
+                        .optional()
+                        .describe("Minimum stock quantity."),
+                    maxStock: z
+                        .number()
+                        .optional()
+                        .describe("Maximum stock quantity."),
+                    minPrice: z
+                        .number()
+                        .optional()
+                        .describe("Minimum basic price."),
+                    maxPrice: z
+                        .number()
+                        .optional()
+                        .describe("Maximum basic price."),
+                    limit: z
+                        .number()
+                        .optional()
+                        .describe("Limit results (default 50)."),
+                }),
+                async execute(input) {
+                    return searchStock(input);
+                },
+            },
+            listStockDistinctValues: {
+                description:
+                    "List all distinct values for stock attributes (fabric types, loom types, colours, patterns, etc.) to help discover valid filter values.",
+                inputSchema: z.object({}),
+                async execute() {
+                    return listStockDistinctValues();
+                },
+            },
+            getStockValueByDesign: {
+                description:
+                    "Get stock value breakdown by Ainocular design, shade, or colour master.",
+                inputSchema: z.object({
+                    groupBy: z
+                        .enum(["design", "shade", "colour_master"])
+                        .optional()
+                        .describe(
+                            "Group by design, shade, or colour_master (default design).",
+                        ),
+                    limit: z
+                        .number()
+                        .optional()
+                        .describe("Limit results (default 20)."),
+                }),
+                async execute(input) {
+                    return getStockValueByDesign(input);
+                },
+            },
+            getStockAgingReport: {
+                description:
+                    "Get stock aging report showing items sorted by days until replenishment (urgency).",
+                inputSchema: z.object({
+                    limit: z
+                        .number()
+                        .optional()
+                        .describe("Limit results (default 30)."),
+                }),
+                async execute(input) {
+                    return getStockAgingReport(input);
+                },
+            },
+            getExcessStockReport: {
+                description:
+                    "Find excess stock items with high inventory but low sales velocity - items that may be overstocked.",
+                inputSchema: z.object({
+                    coverageMonthsThreshold: z
+                        .number()
+                        .optional()
+                        .describe(
+                            "Items with stock covering more than N months are flagged as excess (default 6).",
+                        ),
+                    limit: z
+                        .number()
+                        .optional()
+                        .describe("Limit results (default 20)."),
+                }),
+                async execute(input) {
+                    return getExcessStockReport(input);
                 },
             },
         },
