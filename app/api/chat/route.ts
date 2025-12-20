@@ -43,6 +43,17 @@ import {
     listMaterialInvoices,
 } from "@/lib/invoiceTools";
 
+import {
+    getMyInvoiceDetails,
+    getMyInvoiceHistory,
+    getMyInvoicePdf,
+    getMyInvoiceSummary,
+    getMyMonthlyPurchaseTrend,
+    getMyProfile,
+    getMyPurchasesByMaterial,
+    getMyRecentInvoices,
+} from "@/lib/userTools";
+
 export async function POST(req: Request) {
     const { messages }: { messages: UIMessage[] } = await req.json();
 
@@ -52,7 +63,12 @@ export async function POST(req: Request) {
             "You are an invoice and stock analytics assistant. Always answer the user in clear, short natural language, " +
             "backed by factual data from the available tools. You can analyze invoices, sales trends, customer behavior, " +
             "and stock/inventory data including stock levels, replenishment needs, excess stock, and stock value by category. " +
-            "When you call tools, you must also follow up with a human-readable explanation of the results.",
+            "When you call tools, you must also follow up with a human-readable explanation of the results.\n\n" +
+            "IMPORTANT: When users ask about 'my invoices', 'my history', 'my purchases', or anything personal to them, " +
+            "use the user-specific tools (getMyProfile, getMyInvoiceHistory, getMyRecentInvoices, getMyInvoiceSummary, " +
+            "getMyInvoiceDetails, getMyInvoicePdf, getMyPurchasesByMaterial, getMyMonthlyPurchaseTrend). These tools " +
+            "require authentication and will automatically scope queries to the logged-in user's account. If authentication " +
+            "fails, inform the user they need to sign in first.",
         messages: convertToModelMessages(messages),
         // Allow multiple LLM steps so the model can call tools and then answer.
         stopWhen: stepCountIs(7),
@@ -385,6 +401,173 @@ export async function POST(req: Request) {
                     return getInvoicePdfLink({ billingDocument });
                 },
             },
+
+            // ========================
+            // User Tools (Auth Required) - Scoped to authenticated user's account
+            // ========================
+
+            getMyProfile: {
+                description:
+                    "Get the authenticated user's profile and invoice statistics. Requires authentication. Returns user info and summary stats like total invoices, total spent, first/last invoice dates.",
+                inputSchema: z.object({}),
+                async execute() {
+                    return getMyProfile();
+                },
+            },
+            getMyInvoiceHistory: {
+                description:
+                    "Get the authenticated user's invoice history with optional date filters. Requires authentication. Only returns invoices belonging to the logged-in user.",
+                inputSchema: z.object({
+                    fromDate: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Start of invoice date range (YYYY-MM-DD). Optional.",
+                        ),
+                    toDate: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "End of invoice date range (YYYY-MM-DD). Optional.",
+                        ),
+                    limit: z
+                        .number()
+                        .int()
+                        .optional()
+                        .describe(
+                            "Maximum number of invoices to return (defaults to 50, max 200).",
+                        ),
+                    offset: z
+                        .number()
+                        .int()
+                        .optional()
+                        .describe(
+                            "Number of invoices to skip for pagination (defaults to 0).",
+                        ),
+                }),
+                async execute(input) {
+                    return getMyInvoiceHistory(input);
+                },
+            },
+            getMyRecentInvoices: {
+                description:
+                    "Get the authenticated user's most recent invoices. Requires authentication. Quick way to see latest purchases.",
+                inputSchema: z.object({
+                    limit: z
+                        .number()
+                        .int()
+                        .optional()
+                        .describe(
+                            "Number of recent invoices to return (defaults to 10, max 50).",
+                        ),
+                }),
+                async execute(input) {
+                    return getMyRecentInvoices(input);
+                },
+            },
+            getMyInvoiceSummary: {
+                description:
+                    "Get a summary of the authenticated user's invoices (totals for net amount, gross amount, discounts, taxes, etc.). Requires authentication.",
+                inputSchema: z.object({
+                    fromDate: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Start of invoice date range (YYYY-MM-DD). Optional.",
+                        ),
+                    toDate: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "End of invoice date range (YYYY-MM-DD). Optional.",
+                        ),
+                }),
+                async execute(input) {
+                    return getMyInvoiceSummary(input);
+                },
+            },
+            getMyInvoiceDetails: {
+                description:
+                    "Get details of a specific invoice for the authenticated user. Requires authentication. Verifies the invoice belongs to the user before returning details.",
+                inputSchema: z.object({
+                    billingDocument: z
+                        .string()
+                        .min(1)
+                        .describe(
+                            "The billing document ID/number of the invoice.",
+                        ),
+                    item: z
+                        .number()
+                        .int()
+                        .optional()
+                        .describe(
+                            "Optional item number to get a specific line item.",
+                        ),
+                }),
+                async execute(input) {
+                    return getMyInvoiceDetails(input);
+                },
+            },
+            getMyInvoicePdf: {
+                description:
+                    "Get the PDF download link for the authenticated user's invoice. Requires authentication. Only returns PDF link if the invoice belongs to the logged-in user.",
+                inputSchema: z.object({
+                    billingDocument: z
+                        .string()
+                        .min(1)
+                        .describe(
+                            "The billing document ID/number of the invoice to get the PDF for.",
+                        ),
+                }),
+                async execute(input) {
+                    return getMyInvoicePdf(input);
+                },
+            },
+            getMyPurchasesByMaterial: {
+                description:
+                    "Get the authenticated user's purchase analysis by material/product. Shows what materials the user has purchased and how much. Requires authentication.",
+                inputSchema: z.object({
+                    fromDate: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "Start of invoice date range (YYYY-MM-DD). Optional.",
+                        ),
+                    toDate: z
+                        .string()
+                        .optional()
+                        .describe(
+                            "End of invoice date range (YYYY-MM-DD). Optional.",
+                        ),
+                    limit: z
+                        .number()
+                        .int()
+                        .optional()
+                        .describe(
+                            "Maximum number of materials to return (defaults to 20, max 100).",
+                        ),
+                }),
+                async execute(input) {
+                    return getMyPurchasesByMaterial(input);
+                },
+            },
+            getMyMonthlyPurchaseTrend: {
+                description:
+                    "Get the authenticated user's monthly purchase trends over time. Shows purchase patterns month by month. Requires authentication.",
+                inputSchema: z.object({
+                    months: z
+                        .number()
+                        .int()
+                        .optional()
+                        .describe(
+                            "Number of months to look back (defaults to 12, max 24).",
+                        ),
+                }),
+                async execute(input) {
+                    return getMyMonthlyPurchaseTrend(input);
+                },
+            },
+
             getQuarterlyRevenue: {
                 description:
                     "Get quarterly revenue for regions (e.g. US, UK, EU) for the last N years.",

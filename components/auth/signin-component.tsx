@@ -37,7 +37,7 @@ export default function SigninComponent() {
                 password: formData.password,
             });
             console.log("Sign In successful");
-            router.push("/dashboard");
+            router.push("/");
         } catch (error) {
             console.error("Sign In failed:", error);
         }
